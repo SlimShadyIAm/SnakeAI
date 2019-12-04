@@ -32,8 +32,10 @@ def nodeInSet(node, set):
 
 
 def heuristic(start_node, end_node):
-    return (((start_node.position[0] - end_node.position[0]) ** 2) +
-            ((start_node.position[1] - end_node.position[1]) ** 2)) ** 0.5
+    # return (((start_node.position[0] - end_node.position[0]) ** 2) +
+            # ((start_node.position[1] - end_node.position[1]) ** 2)) ** 0.5
+    return abs(
+        start_node.position[0] - end_node.position[0]) + abs(start_node.position[1] - end_node.position[1])
 
 
 def astar(head_position, board, score):
@@ -113,6 +115,56 @@ def astar(head_position, board, score):
                 neighbor.parent = current
 
 
+def resolveMovePath(path, direction, head_position):
+        # move in the x direction
+    if path[1][0] != head_position[0]:
+        if path[1][0] > head_position[0]:
+            if direction == Direction.EAST:
+                return Move.STRAIGHT
+            elif direction == Direction.NORTH:
+                return Move.RIGHT
+            elif direction == Direction.WEST or direction == Direction.SOUTH:
+                return Move.LEFT
+        elif path[1][0] < head_position[0]:
+            if direction == Direction.WEST:
+                return Move.STRAIGHT
+            elif direction == Direction.NORTH:
+                return Move.LEFT
+            elif direction == Direction.EAST or direction == Direction.SOUTH:
+                return Move.RIGHT
+
+    if path[1][1] != head_position[1]:
+        if path[1][1] > head_position[1]:
+            if direction == Direction.WEST:
+                return Move.LEFT
+            elif direction == Direction.SOUTH:
+                return Move.STRAIGHT
+            elif direction == Direction.EAST or direction == Direction.NORTH:
+                return Move.RIGHT
+        elif path[1][1] < head_position[1]:
+            if direction == Direction.EAST:
+                return Move.LEFT
+            elif direction == Direction.NORTH:
+                return Move.STRAIGHT
+            elif direction == Direction.WEST or direction == Direction.SOUTH:
+                return Move.RIGHT
+
+
+def resolveMoveNoPath(board, head_position):
+    path = []
+    path.append(head_position)
+    for neighborOffset in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
+            # Get node position
+        neighborPos = (
+            head_position[0] + neighborOffset[0], head_position[1] + neighborOffset[1])
+
+        if (neighborPos[0] < (len(board)) and neighborPos[0] >= 0 and neighborPos[1] < (len(board[len(board)-1])) and neighborPos[1] >= 0):
+            if board[neighborPos[0]][neighborPos[1]] == GameObject.EMPTY or board[neighborPos[0]][neighborPos[1]] == GameObject.FOOD:
+                path.append(neighborPos)
+    print("NO MOVE PATH", path)
+    return path
+
+
 class Agent:
 
     def __init__(self):
@@ -126,7 +178,7 @@ class Agent:
 
         :param board: A two dimensional array representing the current state of the board. The upper left most
         coordinate is equal to (0,0) and each coordinate (x,y) can be accessed by executing board[x][y]. At each
-        coordinate a GameObject is present. This can be either GameObject.EMPTY (meaning there is nothing at the
+        coordinate a GameObject is present. This can be either GameObject.EMPTY (meaning there is nopath at the
         given coordinate), GameObject.FOOD (meaning there is food at the given coordinate), GameObject.WALL (meaning
         there is a wall at the given coordinate. TIP: do not run into them), GameObject.SNAKE_HEAD (meaning the head
         of the snake is located there) and GameObject.SNAKE_BODY (meaning there is a body part of the snake there.
@@ -159,46 +211,19 @@ class Agent:
         Move.LEFT and Move.RIGHT changes the direction of the snake. In example, if the snake is facing north and the
         move left is made, the snake will go one block to the left and change its direction to west.
         """
-        thing = astar(head_position, board, score)
+        path = astar(head_position, board, score)
         print(
-            "Current position: {0}\nPath: {1}\n-----".format(head_position, thing))
+            "Current position: {0}\nPath: {1}\n-----".format(head_position, path))
 
-        if thing:
-            # move in the x direction
-            if thing[1][0] != head_position[0]:
-                if thing[1][0] > head_position[0]:
-                    if direction == Direction.EAST:
-                        return Move.STRAIGHT
-                    elif direction == Direction.NORTH:
-                        return Move.RIGHT
-                    elif direction == Direction.WEST or direction == Direction.SOUTH:
-                        return Move.LEFT
-                elif thing[1][0] < head_position[0]:
-                    if direction == Direction.WEST:
-                        return Move.STRAIGHT
-                    elif direction == Direction.NORTH:
-                        return Move.LEFT
-                    elif direction == Direction.EAST or direction == Direction.SOUTH:
-                        return Move.RIGHT
-
-            if thing[1][1] != head_position[1]:
-                if thing[1][1] > head_position[1]:
-                    if direction == Direction.WEST:
-                        return Move.LEFT
-                    elif direction == Direction.SOUTH:
-                        return Move.STRAIGHT
-                    elif direction == Direction.EAST or direction == Direction.NORTH:
-                        return Move.RIGHT
-                elif thing[1][1] < head_position[1]:
-                    if direction == Direction.EAST:
-                        return Move.LEFT
-                    elif direction == Direction.NORTH:
-                        return Move.STRAIGHT
-                    elif direction == Direction.WEST or direction == Direction.SOUTH:
-                        return Move.RIGHT
+        if path:
+            return resolveMovePath(path, direction, head_position)
         else:
-            # time.sleep(10)
-            return Move.LEFT
+            path = resolveMoveNoPath(board, head_position)
+            if path:
+                if len(path) > 1:
+                    return resolveMovePath(path, direction, head_position)
+                else:
+                    return Move.STRAIGHT
 
     def should_redraw_board(self):
         """
@@ -236,4 +261,4 @@ class Agent:
         represents the tail and the first element represents the body part directly following the head of the snake.
         When the snake runs in its own body the following holds: head_position in body_parts.
         """
-        time.sleep(10)
+        time.sleep(100)
