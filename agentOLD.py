@@ -2,99 +2,6 @@ from gameobjects import GameObject
 from move import Move, Direction
 
 
-class Node:
-    def __init__(self, parent, position):
-        self.parent = parent
-        self.position = position
-
-        self.f = 0
-        self.g = 0
-        self.h = 0
-
-        self.neighbors = []
-
-    def __repr__(self):
-        return "Item(%s, %s)" % (self.position, self.f)
-
-    # def __eq__(self, other):
-    #     if not isinstance(other, type(self)):
-    #         return NotImplemented
-    #     return self.f == other.f and self.g == other.g and self.h == other.h and self.parent == other.parent and self.position == other.position
-
-
-def heuristic(start_node, end_node):
-    return (((start_node.position[0] - end_node.position[0]) ** 2) +
-            ((start_node.position[1] - end_node.position[1]) ** 2)) ** 0.5
-
-
-def astar(head_position, board, score):
-    print("Head position:", head_position)
-    # initialize our variables
-    openSet = []
-    closedSet = []
-    startNode = Node(None, head_position)
-    endNode = Node(None, None)
-
-    # find the goal position
-    for x in range(len(board)):
-        for y in range(len(board)):
-            if board[x][y] == GameObject.FOOD:
-                # found it!
-                endPos = (x, y)
-                endNode.position = endPos
-                print("Food position: ", endPos)
-
-    # our start node needs a cost
-    startNode.h = heuristic(startNode, endNode)
-    startNode.f = startNode.h
-
-    # start the open set with the start node
-    openSet.append(startNode)
-
-    while openSet:
-        # we can keep going!
-        # get the node with the lowest cost from the open set
-        current = min(openSet, key=lambda x: x.f)
-        # print(current)
-        # print("...")
-
-        # we're done! return the path we need to take...
-        if current == endNode:
-            path = []
-            while current is not None:
-                path.append(current.position)
-                current = current.parent
-            return path[::-1]  # Return reversed path
-
-        openSet.remove(current)
-        closedSet.append(current)
-
-        for neighborOffset in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
-            # Get node position
-            neighborPos = (
-                current.position[0] + neighborOffset[0], current.position[1] + neighborOffset[1])
-
-            if neighborPos[0] > 0 and neighborPos[0] < len(board[1]) and neighborPos[1] > 0 & neighborPos[1] < len(board[1]) and board[neighborPos[0]][neighborPos[1]] == GameObject.EMPTY:
-                neighborNode = Node(current, neighborPos)
-                current.neighbors.append(neighborNode)
-
-        for neighbor in current.neighbors:
-            # do we need to evaluate this neighbor?
-            if neighbor not in closedSet:
-                # check if the node already had a better g value...
-                tentativeG = current.g + 1
-                if neighbor in openSet:
-                    if neighbor.g > tentativeG:
-                        # we found a better g value!
-                        neighbor.g = tentativeG
-                else:
-                    neighbor.g = tentativeG
-                    openSet.append(neighbor)
-                neighbor.h = heuristic(neighbor, endNode)
-                neighbor.f = neighbor.g + neighbor.h
-                neighbor.parent = current
-
-
 class Agent:
 
     def __init__(self):
@@ -109,7 +16,7 @@ class Agent:
         :param board: A two dimensional array representing the current state of the board. The upper left most
         coordinate is equal to (0,0) and each coordinate (x,y) can be accessed by executing board[x][y]. At each
         coordinate a GameObject is present. This can be either GameObject.EMPTY (meaning there is nothing at the
-        given coordinate), GameObject.FOOD (meaning there is food at the given coordinate), GameObject.WALL (meaning
+        given coordinate), GameObject.get("f")OOD (meaning there is food at the given coordinate), GameObject.WALL (meaning
         there is a wall at the given coordinate. TIP: do not run into them), GameObject.SNAKE_HEAD (meaning the head
         of the snake is located there) and GameObject.SNAKE_BODY (meaning there is a body part of the snake there.
         TIP: also, do not run into these). The snake will also die when it tries to escape the board (moving out of
@@ -141,41 +48,128 @@ class Agent:
         Move.LEFT and Move.RIGHT changes the direction of the snake. In example, if the snake is facing north and the
         move left is made, the snake will go one block to the left and change its direction to west.
         """
-        thing = astar(head_position, board, score)
-        print(
-            "Current position: {0}\nPath: {1}\n-----".format(head_position, thing))
 
-        if thing[1][0] != head_position[0]:
-            if thing[1][0] > head_position[0]:
-                if direction == Direction.EAST:
-                    return Move.STRAIGHT
-                elif direction == Direction.NORTH:
-                    return Move.RIGHT
-                elif direction == Direction.WEST | direction == Direction.SOUTH:
-                    return Move.LEFT
-            elif thing[1][0] < head_position[0]:
-                if direction == Direction.WEST:
-                    return Move.STRAIGHT
-                elif direction == Direction.NORTH:
-                    return Move.LEFT
-                elif direction == Direction.EAST | direction == Direction.SOUTH:
-                    return Move.LEFT
+        # First we need to implement the f = g + h function.
+        # f is the total cost of a node,
+        # g is the distance between the current node and the start node, use turns_alive
+        # and h is the heuristic function, which we choose as the distance between the current node and the goal node.
+        # and we choose the Manhattan heuristic for this (i.e x distance + y distance)
 
-        if thing[1][1] != head_position[1]:
-            if thing[1][1] > head_position[1]:
-                if direction == Direction.WEST:
-                    return Move.LEFT
-                elif direction == Direction.SOUTH:
-                    return Move.STRAIGHT
-                elif direction == Direction.EAST | direction == Direction.NORTH:
-                    return Move.LEFT
-            elif thing[1][1] < head_position[1]:
-                if direction == Direction.EAST:
-                    return Move.LEFT
-                elif direction == Direction.NORTH:
-                    return Move.STRAIGHT
-                elif direction == Direction.WEST | direction == Direction.SOUTH:
-                    return Move.RIGHT
+        g = turns_alive
+
+        # start and end positions
+        start_position = [0, 0]
+        food_position = [0, 0]
+
+        # initialize start position
+        if turns_alive == 0:
+            start_position = head_position
+
+        # find food and set end position
+        for x in range(len(board)):
+            for y in range(len(board)):
+                if board[x][y] == GameObject.FOOD:
+                    h = abs(x - head_position[0]) + abs(y - head_position[1])
+                    food_position = [x, y]
+
+        f = g + h
+
+        g_of_food = abs(head_position[0] - food_position[0]) + \
+            abs(head_position[1] - food_position[1])
+
+        # Node format is an array. Format is as such:
+        # [position of current node, f, g, h, parent node]
+        # start_node = [start_position, f, g, h, None]
+        start_node = {
+            "position": start_position,
+            "f": f,
+            "g": g,
+            "h": h,
+            "parent": None
+        }
+        end_node = {
+            "position": food_position,
+            "f": g_of_food + h,
+            "g": g_of_food,
+            "h": h,
+            "parent": None
+        }
+
+        open_list = []
+        closed_list = []
+        returnPath = []
+        open_list.append(start_node)
+
+        while (len(open_list) > 0):
+            print(open_list)
+            print("-----")
+            least_cost = open_list[0].get("f")
+            current_node = open_list[0]
+            current_index = 0
+            for index in range(len(open_list)):
+                if open_list[index].get("f") < least_cost:
+                    current_node = open_list[0]
+                    current_index = index
+
+            open_list.pop(current_index)
+            closed_list.append(current_node)
+
+            if current_node == end_node:
+                path = []
+                temp = current_node
+                while temp is not None:
+                    path.append(temp["position"])
+                    temp = temp.get("parent")
+                returnPath = path[::-1]
+                break
+
+            children = []
+            # Adjacent squares
+            for new_position in [(0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1)]:
+                # Get node position
+                node_position = (current_node.get("position")[0] + new_position[0],
+                                 current_node.get("position")[1] + new_position[1])
+
+                # Make sure within range
+                if node_position[0] > (len(board) - 1) or node_position[0] < 0 or node_position[1] > (len(board[len(board)-1]) - 1) or node_position[1] < 0:
+                    continue
+                # Make sure walkable terrain
+                if board[node_position[0]][node_position[1]] != GameObject.WALL:
+                    tempG = abs(node_position[0] - food_position[0]) + \
+                        abs(node_position[1] - food_position[1])
+                    tempH = abs(
+                        food_position[0] - node_position[0]) + abs(food_position[1] - node_position[1])
+                    new_node = {
+                        "position": node_position,
+                        "f": tempG + tempH,
+                        "g": tempG,
+                        "h": tempH,
+                        "parent": current_node
+                    }
+                    # Append
+                    children.append(new_node)
+
+            # Loop through children
+            for child in children:
+                # Child is on the closed list
+                for closed_child in closed_list:
+                    if child == closed_child:
+                        continue
+
+                # Create the f, g, and h values
+                child["g"] = current_node.get("g") + 1
+                child["h"] = ((child.get("position")[0] - end_node.get("position")[0])
+                              ** 2) + ((child.get("position")[1] - end_node.get("position")[1]) ** 2)
+                child["f"] = child.get("g") + child.get("h")
+
+                # Child is already in the open list")
+                for open_node in open_list:
+                    if child == open_node and child.get("g") > open_node.get("g"):
+                        continue
+
+                open_list.append(child)
+        # for item in returnPath:
+        #     print(item)
 
     def should_redraw_board(self):
         """
