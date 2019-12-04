@@ -91,7 +91,6 @@ def astar(head_position, board, score):
             if (neighborPos[0] < (len(board)) and neighborPos[0] > 0 and neighborPos[1] < (len(board[len(board)-1])) and neighborPos[1] > 0):
                 if board[neighborPos[0]][neighborPos[1]] == GameObject.EMPTY or board[neighborPos[0]][neighborPos[1]] == GameObject.FOOD:
                     neighborNode = Node(current, neighborPos)
-                    print(neighborPos)
                     current.neighbors.append(neighborNode)
 
         for neighbor in current.neighbors:
