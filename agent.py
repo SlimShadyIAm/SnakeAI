@@ -1,5 +1,6 @@
 from gameobjects import GameObject
 from move import Move, Direction
+import time
 
 
 class Node:
@@ -20,6 +21,14 @@ class Node:
     #     if not isinstance(other, type(self)):
     #         return NotImplemented
     #     return self.f == other.f and self.g == other.g and self.h == other.h and self.parent == other.parent and self.position == other.position
+
+
+def nodeInSet(node, set):
+    for setNode in set:
+        # if setNode.f == node.f and setNode.g == node.g and setNode.h == node.h and
+        if setNode.position == node.position:
+            return True
+    return False
 
 
 def heuristic(start_node, end_node):
@@ -51,7 +60,8 @@ def astar(head_position, board, score):
     # start the open set with the start node
     openSet.append(startNode)
 
-    while openSet:
+    while len(openSet) > 0:
+        # print("-----")
         # we can keep going!
         # get the node with the lowest cost from the open set
         current = min(openSet, key=lambda x: x.f)
@@ -59,7 +69,11 @@ def astar(head_position, board, score):
         # print("...")
 
         # we're done! return the path we need to take...
-        if current == endNode:
+        if current.position == endNode.position:
+            # print(current.f)
+            # print(current.g)
+            # print(current.h)
+            # print(current.neighbors)
             path = []
             while current is not None:
                 path.append(current.position)
@@ -74,16 +88,18 @@ def astar(head_position, board, score):
             neighborPos = (
                 current.position[0] + neighborOffset[0], current.position[1] + neighborOffset[1])
 
-            if neighborPos[0] > 0 and neighborPos[0] < len(board[1]) and neighborPos[1] > 0 & neighborPos[1] < len(board[1]) and board[neighborPos[0]][neighborPos[1]] == GameObject.EMPTY:
-                neighborNode = Node(current, neighborPos)
-                current.neighbors.append(neighborNode)
+            if (neighborPos[0] < (len(board)) and neighborPos[0] > 0 and neighborPos[1] < (len(board[len(board)-1])) and neighborPos[1] > 0):
+                if board[neighborPos[0]][neighborPos[1]] == GameObject.EMPTY or board[neighborPos[0]][neighborPos[1]] == GameObject.FOOD:
+                    neighborNode = Node(current, neighborPos)
+                    print(neighborPos)
+                    current.neighbors.append(neighborNode)
 
         for neighbor in current.neighbors:
             # do we need to evaluate this neighbor?
-            if neighbor not in closedSet:
+            if not nodeInSet(neighbor, closedSet):
                 # check if the node already had a better g value...
                 tentativeG = current.g + 1
-                if neighbor in openSet:
+                if nodeInSet(neighbor, openSet):
                     if neighbor.g > tentativeG:
                         # we found a better g value!
                         neighbor.g = tentativeG
@@ -145,21 +161,22 @@ class Agent:
         print(
             "Current position: {0}\nPath: {1}\n-----".format(head_position, thing))
 
+        # move in the x direction
         if thing[1][0] != head_position[0]:
             if thing[1][0] > head_position[0]:
                 if direction == Direction.EAST:
                     return Move.STRAIGHT
                 elif direction == Direction.NORTH:
                     return Move.RIGHT
-                elif direction == Direction.WEST | direction == Direction.SOUTH:
+                elif direction == Direction.WEST or direction == Direction.SOUTH:
                     return Move.LEFT
             elif thing[1][0] < head_position[0]:
                 if direction == Direction.WEST:
                     return Move.STRAIGHT
                 elif direction == Direction.NORTH:
                     return Move.LEFT
-                elif direction == Direction.EAST | direction == Direction.SOUTH:
-                    return Move.LEFT
+                elif direction == Direction.EAST or direction == Direction.SOUTH:
+                    return Move.RIGHT
 
         if thing[1][1] != head_position[1]:
             if thing[1][1] > head_position[1]:
@@ -167,14 +184,14 @@ class Agent:
                     return Move.LEFT
                 elif direction == Direction.SOUTH:
                     return Move.STRAIGHT
-                elif direction == Direction.EAST | direction == Direction.NORTH:
-                    return Move.LEFT
+                elif direction == Direction.EAST or direction == Direction.NORTH:
+                    return Move.RIGHT
             elif thing[1][1] < head_position[1]:
                 if direction == Direction.EAST:
                     return Move.LEFT
                 elif direction == Direction.NORTH:
                     return Move.STRAIGHT
-                elif direction == Direction.WEST | direction == Direction.SOUTH:
+                elif direction == Direction.WEST or direction == Direction.SOUTH:
                     return Move.RIGHT
 
     def should_redraw_board(self):
