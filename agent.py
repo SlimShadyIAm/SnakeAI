@@ -37,7 +37,7 @@ def heuristic(start_node, end_node):
 
 
 def astar(head_position, board, score):
-    print("Head position:", head_position)
+    # print("Head position:", head_position)
     # initialize our variables
     openSet = []
     closedSet = []
@@ -51,7 +51,7 @@ def astar(head_position, board, score):
                 # found it!
                 endPos = (x, y)
                 endNode.position = endPos
-                print("Food position: ", endPos)
+                # print("Food position: ", endPos)
 
     # our start node needs a cost
     startNode.h = heuristic(startNode, endNode)
@@ -88,14 +88,17 @@ def astar(head_position, board, score):
             neighborPos = (
                 current.position[0] + neighborOffset[0], current.position[1] + neighborOffset[1])
 
-            if (neighborPos[0] < (len(board)) and neighborPos[0] > 0 and neighborPos[1] < (len(board[len(board)-1])) and neighborPos[1] > 0):
+            if (neighborPos[0] < (len(board)) and neighborPos[0] >= 0 and neighborPos[1] < (len(board[len(board)-1])) and neighborPos[1] >= 0):
                 if board[neighborPos[0]][neighborPos[1]] == GameObject.EMPTY or board[neighborPos[0]][neighborPos[1]] == GameObject.FOOD:
                     neighborNode = Node(current, neighborPos)
                     current.neighbors.append(neighborNode)
 
+        # print(startNode.neighbors)
+        # print("------")
         for neighbor in current.neighbors:
             # do we need to evaluate this neighbor?
             if not nodeInSet(neighbor, closedSet):
+                # print("here")
                 # check if the node already had a better g value...
                 tentativeG = current.g + 1
                 if nodeInSet(neighbor, openSet):
@@ -160,38 +163,42 @@ class Agent:
         print(
             "Current position: {0}\nPath: {1}\n-----".format(head_position, thing))
 
-        # move in the x direction
-        if thing[1][0] != head_position[0]:
-            if thing[1][0] > head_position[0]:
-                if direction == Direction.EAST:
-                    return Move.STRAIGHT
-                elif direction == Direction.NORTH:
-                    return Move.RIGHT
-                elif direction == Direction.WEST or direction == Direction.SOUTH:
-                    return Move.LEFT
-            elif thing[1][0] < head_position[0]:
-                if direction == Direction.WEST:
-                    return Move.STRAIGHT
-                elif direction == Direction.NORTH:
-                    return Move.LEFT
-                elif direction == Direction.EAST or direction == Direction.SOUTH:
-                    return Move.RIGHT
+        if thing:
+            # move in the x direction
+            if thing[1][0] != head_position[0]:
+                if thing[1][0] > head_position[0]:
+                    if direction == Direction.EAST:
+                        return Move.STRAIGHT
+                    elif direction == Direction.NORTH:
+                        return Move.RIGHT
+                    elif direction == Direction.WEST or direction == Direction.SOUTH:
+                        return Move.LEFT
+                elif thing[1][0] < head_position[0]:
+                    if direction == Direction.WEST:
+                        return Move.STRAIGHT
+                    elif direction == Direction.NORTH:
+                        return Move.LEFT
+                    elif direction == Direction.EAST or direction == Direction.SOUTH:
+                        return Move.RIGHT
 
-        if thing[1][1] != head_position[1]:
-            if thing[1][1] > head_position[1]:
-                if direction == Direction.WEST:
-                    return Move.LEFT
-                elif direction == Direction.SOUTH:
-                    return Move.STRAIGHT
-                elif direction == Direction.EAST or direction == Direction.NORTH:
-                    return Move.RIGHT
-            elif thing[1][1] < head_position[1]:
-                if direction == Direction.EAST:
-                    return Move.LEFT
-                elif direction == Direction.NORTH:
-                    return Move.STRAIGHT
-                elif direction == Direction.WEST or direction == Direction.SOUTH:
-                    return Move.RIGHT
+            if thing[1][1] != head_position[1]:
+                if thing[1][1] > head_position[1]:
+                    if direction == Direction.WEST:
+                        return Move.LEFT
+                    elif direction == Direction.SOUTH:
+                        return Move.STRAIGHT
+                    elif direction == Direction.EAST or direction == Direction.NORTH:
+                        return Move.RIGHT
+                elif thing[1][1] < head_position[1]:
+                    if direction == Direction.EAST:
+                        return Move.LEFT
+                    elif direction == Direction.NORTH:
+                        return Move.STRAIGHT
+                    elif direction == Direction.WEST or direction == Direction.SOUTH:
+                        return Move.RIGHT
+        else:
+            # time.sleep(10)
+            return Move.LEFT
 
     def should_redraw_board(self):
         """
@@ -229,3 +236,4 @@ class Agent:
         represents the tail and the first element represents the body part directly following the head of the snake.
         When the snake runs in its own body the following holds: head_position in body_parts.
         """
+        time.sleep(10)
