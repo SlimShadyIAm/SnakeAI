@@ -48,8 +48,8 @@ def heuristic(start_node, end_node, score):
     # return (((start_node.position[0] - end_node.position[0]) ** 2) +
             # ((start_node.position[1] - end_node.position[1]) ** 2)) ** 0.5
 
-    return abs(
-        start_node.position[0] - end_node.position[0]) + abs(start_node.position[1] - end_node.position[1]) ** 0.5
+    return (abs(
+        start_node.position[0] - end_node.position[0]) + abs(start_node.position[1] - end_node.position[1])) ** 0.5
 
 
 def astar(head_position, board, score, snake_body):
@@ -177,13 +177,11 @@ def resolveMoveNoPath(board, head_position):
             # Get node position
         neighborPos = (
             head_position[0] + neighborOffset[0], head_position[1] + neighborOffset[1])
-        # print(board[neighborPos[0]])
         if (neighborPos[0] < (len(board)) and neighborPos[0] >= 0 and neighborPos[1] < (len(board[len(board)-1])) and neighborPos[1] >= 0):
             if board[neighborPos[0]][neighborPos[1]] == GameObject.EMPTY or board[neighborPos[0]][neighborPos[1]] == GameObject.FOOD:
                 path.append(neighborPos)
                 return path
-    print("NO MOVE PATH", path)
-    # sleep(10)
+    print("Goodbye cruel world, i'm stuck :("))
     return path
 
 
@@ -191,7 +189,7 @@ class Agent:
 
     def __init__(self):
         """" Constructor of the Agent, can be used to set up variables """
-        self.path = []
+        self.path=[]
 
     def get_move(self, board, score, turns_alive, turns_to_starve, direction, head_position, body_parts):
         """This function behaves as the 'brain' of the snake. You only need to change the code in this function for
@@ -236,23 +234,22 @@ class Agent:
         """
 
         if len(self.path) <= 1:
-            self.path = astar(head_position, board,
+            self.path=astar(head_position, board,
                               score, body_parts)
 
         # print(
         #     "Current position: {0}\nPath: {1}]\nScore: {2}\n-----".format(head_position, self.path, score))
 
         if self.path:
-            tempMove = resolveMovePath(self.path, direction, head_position)
+            tempMove=resolveMovePath(self.path, direction, head_position)
             del self.path[0]
-            # print(tempMove)
             return tempMove
         else:
-            self.path = resolveMoveNoPath(board, head_position)
+            self.path=resolveMoveNoPath(board, head_position)
             # time.sleep(1)
             if self.path:
                 if len(self.path) > 1:
-                    tempMove = resolveMovePath(
+                    tempMove=resolveMovePath(
                         self.path, direction, head_position)
                     del self.path[0]
                     return tempMove
