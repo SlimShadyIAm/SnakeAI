@@ -4,9 +4,12 @@ import time
 
 
 class Node:
-    def __init__(self, parent, position):
+    def __init__(self, parent, position, snake_body, board):
         self.parent = parent
         self.position = position
+
+        self.snake_body = snake_body
+        self.board = board
 
         self.f = 0
         self.g = 0
@@ -31,20 +34,24 @@ def nodeInSet(node, set):
     return False
 
 
-def heuristic(start_node, end_node):
+def heuristic(start_node, end_node, score):
     # return (((start_node.position[0] - end_node.position[0]) ** 2) +
             # ((start_node.position[1] - end_node.position[1]) ** 2)) ** 0.5
-    return abs(
-        start_node.position[0] - end_node.position[0]) + abs(start_node.position[1] - end_node.position[1])
+    if score > 10:
+        return abs(
+            start_node.position[0] - end_node.position[0]) + abs(start_node.position[1] - end_node.position[1]) ** 1
+    else:
+        return abs(
+            start_node.position[0] - end_node.position[0]) + abs(start_node.position[1] - end_node.position[1])
 
 
-def astar(head_position, board, score):
+def astar(head_position, board, score, snake_body):
     # print("Head position:", head_position)
     # initialize our variables
     openSet = []
     closedSet = []
-    startNode = Node(None, head_position)
-    endNode = Node(None, None)
+    startNode = Node(None, head_position, snake_body.copy(), board.copy())
+    endNode = Node(None, None, None, None)
 
     # find the goal position
     for x in range(len(board)):
@@ -53,29 +60,21 @@ def astar(head_position, board, score):
                 # found it!
                 endPos = (x, y)
                 endNode.position = endPos
-                # print("Food position: ", endPos)
 
     # our start node needs a cost
-    startNode.h = heuristic(startNode, endNode)
+    startNode.h = heuristic(startNode, endNode, score)
     startNode.f = startNode.h
 
     # start the open set with the start node
     openSet.append(startNode)
 
     while len(openSet) > 0:
-        # print("-----")
         # we can keep going!
         # get the node with the lowest cost from the open set
         current = min(openSet, key=lambda x: x.f)
-        # print(current)
-        # print("...")
 
         # we're done! return the path we need to take...
         if current.position == endNode.position:
-            # print(current.f)
-            # print(current.g)
-            # print(current.h)
-            # print(current.neighbors)
             path = []
             while current is not None:
                 path.append(current.position)
@@ -84,23 +83,49 @@ def astar(head_position, board, score):
 
         openSet.remove(current)
         closedSet.append(current)
-
         for neighborOffset in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
             # Get node position
             neighborPos = (
                 current.position[0] + neighborOffset[0], current.position[1] + neighborOffset[1])
 
             if (neighborPos[0] < (len(board)) and neighborPos[0] >= 0 and neighborPos[1] < (len(board[len(board)-1])) and neighborPos[1] >= 0):
-                if board[neighborPos[0]][neighborPos[1]] == GameObject.EMPTY or board[neighborPos[0]][neighborPos[1]] == GameObject.FOOD:
-                    neighborNode = Node(current, neighborPos)
+                if current.board[neighborPos[0]][neighborPos[1]] == GameObject.EMPTY or current.board[neighborPos[0]][neighborPos[1]] == GameObject.FOOD:
+                 # tempSnake = current.snake_body.copy()
+                    # tempSnake.insert(0, current.position)
+                    # tailPos = tempSnake[len(tempSnake) - 1]
+                    # tempBoard = current.board.copy()
+                    # tempBoard[tailPos[0]][tailPos[1]] = GameObject.EMPTY
+                    # tempBoard[neighborPos[0]][neighborPos[1]
+                    #                           ] = GameObject.SNAKE_HEAD
+                    # tempBoard[current.position[0]][current.position[1]
+                    #                                ] = GameObject.SNAKE_BODY
+                    # del tempSnake[-1]
+                    # neighborNode = Node(
+                    #     current, neighborPos, tempSnake, tempBoard)
+                    # current.neighbors.append(neighborNode)
+                    tempBoardState = current.board.copy()
+                    tempSnakeState = current.snake_body.copy()
+
+                    if (len(tempSnakeState) > 1):
+                        snakeTail = tempSnakeState[len(tempSnakeState) - 1]
+                        tempBoardState[snakeTail[0]
+                                       ][snakeTail[1]] = GameObject.EMPTY
+
+                    tempSnakeState.insert(0, current.position)
+
+                    tempBoardState[neighborPos[0]
+                                   ][neighborPos[1]] = GameObject.SNAKE_HEAD
+                    tempBoardState[current.position[0]
+                                   ][current.position[1]] = GameObject.SNAKE_BODY
+                    # if len(tempSnakeState) > 1:
+                    tempSnakeState = tempSnakeState[::1]
+                    neighborNode = Node(
+                        current, neighborPos, tempSnakeState, tempBoardState)
                     current.neighbors.append(neighborNode)
 
-        # print(startNode.neighbors)
-        # print("------")
         for neighbor in current.neighbors:
             # do we need to evaluate this neighbor?
             if not nodeInSet(neighbor, closedSet):
-                # print("here")
                 # check if the node already had a better g value...
                 tentativeG = current.g + 1
                 if nodeInSet(neighbor, openSet):
@@ -110,7 +135,7 @@ def astar(head_position, board, score):
                 else:
                     neighbor.g = tentativeG
                     openSet.append(neighbor)
-                neighbor.h = heuristic(neighbor, endNode)
+                neighbor.h = heuristic(neighbor, endNode, score)
                 neighbor.f = neighbor.g + neighbor.h
                 neighbor.parent = current
 
@@ -159,6 +184,7 @@ def resolveMoveNoPath(board, head_position):
             head_position[0] + neighborOffset[0], head_position[1] + neighborOffset[1])
 
         if (neighborPos[0] < (len(board)) and neighborPos[0] >= 0 and neighborPos[1] < (len(board[len(board)-1])) and neighborPos[1] >= 0):
+            # print(board[neighborPos[0]][neighborPos[1]] == GameObject.EMPTY)
             if board[neighborPos[0]][neighborPos[1]] == GameObject.EMPTY or board[neighborPos[0]][neighborPos[1]] == GameObject.FOOD:
                 path.append(neighborPos)
     print("NO MOVE PATH", path)
@@ -169,6 +195,7 @@ class Agent:
 
     def __init__(self):
         """" Constructor of the Agent, can be used to set up variables """
+        self.path = []
 
     def get_move(self, board, score, turns_alive, turns_to_starve, direction, head_position, body_parts):
         """This function behaves as the 'brain' of the snake. You only need to change the code in this function for
@@ -211,17 +238,27 @@ class Agent:
         Move.LEFT and Move.RIGHT changes the direction of the snake. In example, if the snake is facing north and the
         move left is made, the snake will go one block to the left and change its direction to west.
         """
-        path = astar(head_position, board, score)
-        print(
-            "Current position: {0}\nPath: {1}\n-----".format(head_position, path))
 
-        if path:
-            return resolveMovePath(path, direction, head_position)
+        if len(self.path) <= 1:
+            self.path = astar(head_position, board, score, body_parts)
+
+        # print(
+        #     "Current position: {0}\nPath: {1}]\nScore: {2}\n-----".format(head_position, self.path, score))
+
+        if self.path:
+            tempMove = resolveMovePath(self.path, direction, head_position)
+            del self.path[0]
+            # print(tempMove)
+            return tempMove
         else:
-            path = resolveMoveNoPath(board, head_position)
-            if path:
-                if len(path) > 1:
-                    return resolveMovePath(path, direction, head_position)
+            self.path = resolveMoveNoPath(board, head_position)
+            time.sleep(10)
+            if self.path:
+                if len(self.path) > 1:
+                    tempMove = resolveMovePath(
+                        self.path, direction, head_position)
+                    del self.path[0]
+                    return tempMove
                 else:
                     return Move.STRAIGHT
 
@@ -261,4 +298,4 @@ class Agent:
         represents the tail and the first element represents the body part directly following the head of the snake.
         When the snake runs in its own body the following holds: head_position in body_parts.
         """
-        time.sleep(100)
+        print("score:", score)
