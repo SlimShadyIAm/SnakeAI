@@ -26,6 +26,16 @@ class Node:
     #     return self.f == other.f and self.g == other.g and self.h == other.h and self.parent == other.parent and self.position == other.position
 
 
+def copy_board(board):
+
+    copy = [[GameObject.EMPTY for x in range(
+        len(board))] for y in range(len(board))]
+    for x in range(len(board)):
+        for y in range(len(board)):
+            copy[x][y] = board[x][y] if board[x][y] is not GameObject.SNAKE_HEAD else GameObject.SNAKE_BODY
+    return copy
+
+
 def nodeInSet(node, set):
     for setNode in set:
         # if setNode.f == node.f and setNode.g == node.g and setNode.h == node.h and
@@ -37,12 +47,9 @@ def nodeInSet(node, set):
 def heuristic(start_node, end_node, score):
     # return (((start_node.position[0] - end_node.position[0]) ** 2) +
             # ((start_node.position[1] - end_node.position[1]) ** 2)) ** 0.5
-    if score > 10:
-        return abs(
-            start_node.position[0] - end_node.position[0]) + abs(start_node.position[1] - end_node.position[1]) ** 1
-    else:
-        return abs(
-            start_node.position[0] - end_node.position[0]) + abs(start_node.position[1] - end_node.position[1])
+
+    return abs(
+        start_node.position[0] - end_node.position[0]) + abs(start_node.position[1] - end_node.position[1]) ** 0.5
 
 
 def astar(head_position, board, score, snake_body):
@@ -50,7 +57,8 @@ def astar(head_position, board, score, snake_body):
     # initialize our variables
     openSet = []
     closedSet = []
-    startNode = Node(None, head_position, snake_body.copy(), board.copy())
+    startNode = Node(None, head_position, snake_body.copy(),
+                     copy_board(board))
     endNode = Node(None, None, None, None)
 
     # find the goal position
@@ -90,37 +98,24 @@ def astar(head_position, board, score, snake_body):
 
             if (neighborPos[0] < (len(board)) and neighborPos[0] >= 0 and neighborPos[1] < (len(board[len(board)-1])) and neighborPos[1] >= 0):
                 if current.board[neighborPos[0]][neighborPos[1]] == GameObject.EMPTY or current.board[neighborPos[0]][neighborPos[1]] == GameObject.FOOD:
-                 # tempSnake = current.snake_body.copy()
-                    # tempSnake.insert(0, current.position)
-                    # tailPos = tempSnake[len(tempSnake) - 1]
-                    # tempBoard = current.board.copy()
-                    # tempBoard[tailPos[0]][tailPos[1]] = GameObject.EMPTY
-                    # tempBoard[neighborPos[0]][neighborPos[1]
-                    #                           ] = GameObject.SNAKE_HEAD
-                    # tempBoard[current.position[0]][current.position[1]
-                    #                                ] = GameObject.SNAKE_BODY
-                    # del tempSnake[-1]
-                    # neighborNode = Node(
-                    #     current, neighborPos, tempSnake, tempBoard)
-                    # current.neighbors.append(neighborNode)
-                    tempBoardState = current.board.copy()
+                    boardState = copy_board(current.board)
                     tempSnakeState = current.snake_body.copy()
 
                     if (len(tempSnakeState) > 1):
                         snakeTail = tempSnakeState[len(tempSnakeState) - 1]
-                        tempBoardState[snakeTail[0]
-                                       ][snakeTail[1]] = GameObject.EMPTY
+                        boardState[snakeTail[0]
+                                   ][snakeTail[1]] = GameObject.EMPTY
 
                     tempSnakeState.insert(0, current.position)
 
-                    tempBoardState[neighborPos[0]
-                                   ][neighborPos[1]] = GameObject.SNAKE_HEAD
-                    tempBoardState[current.position[0]
-                                   ][current.position[1]] = GameObject.SNAKE_BODY
+                    boardState[neighborPos[0]
+                               ][neighborPos[1]] = GameObject.SNAKE_HEAD
+                    boardState[current.position[0]
+                               ][current.position[1]] = GameObject.SNAKE_BODY
                     # if len(tempSnakeState) > 1:
                     tempSnakeState = tempSnakeState[::1]
                     neighborNode = Node(
-                        current, neighborPos, tempSnakeState, tempBoardState)
+                        current, neighborPos, tempSnakeState, boardState)
                     current.neighbors.append(neighborNode)
 
         for neighbor in current.neighbors:
@@ -182,12 +177,13 @@ def resolveMoveNoPath(board, head_position):
             # Get node position
         neighborPos = (
             head_position[0] + neighborOffset[0], head_position[1] + neighborOffset[1])
-
+        # print(board[neighborPos[0]])
         if (neighborPos[0] < (len(board)) and neighborPos[0] >= 0 and neighborPos[1] < (len(board[len(board)-1])) and neighborPos[1] >= 0):
-            # print(board[neighborPos[0]][neighborPos[1]] == GameObject.EMPTY)
             if board[neighborPos[0]][neighborPos[1]] == GameObject.EMPTY or board[neighborPos[0]][neighborPos[1]] == GameObject.FOOD:
                 path.append(neighborPos)
+                return path
     print("NO MOVE PATH", path)
+    # sleep(10)
     return path
 
 
@@ -240,7 +236,8 @@ class Agent:
         """
 
         if len(self.path) <= 1:
-            self.path = astar(head_position, board, score, body_parts)
+            self.path = astar(head_position, board,
+                              score, body_parts)
 
         # print(
         #     "Current position: {0}\nPath: {1}]\nScore: {2}\n-----".format(head_position, self.path, score))
@@ -252,7 +249,7 @@ class Agent:
             return tempMove
         else:
             self.path = resolveMoveNoPath(board, head_position)
-            time.sleep(10)
+            # time.sleep(1)
             if self.path:
                 if len(self.path) > 1:
                     tempMove = resolveMovePath(
