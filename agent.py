@@ -50,6 +50,11 @@ def nodeInSet(node, set):
 
 
 def heuristic(start_node, end_node, score):
+    # if score > 30:
+    #     return 1/100+(abs(
+    #         start_node.position[0] - end_node.position[0]) + abs(start_node.position[1] - end_node.position[1]))
+
+    # else:
     return (abs(
         start_node.position[0] - end_node.position[0]) + abs(start_node.position[1] - end_node.position[1])) ** 0.5
 
@@ -61,9 +66,8 @@ def astar(head_position, board, score, snake_body):
     startNode = Node(None, head_position, snake_body.copy(),
                      copy_board(board))  # initial state to find path to food from
     endNodes = []  # all possible food objects
-    # endNode = Node(None, None, None, None)  # goal state (food)
 
-    # find the goal position
+    # find the goal positions. make a new node for each goal node
     for x in range(len(board)):
         for y in range(len(board)):
             if board[x][y] == GameObject.FOOD:
@@ -73,14 +77,25 @@ def astar(head_position, board, score, snake_body):
                 newEndNode.position = endPos
                 endNodes.append(newEndNode)
 
-    minHeuristic = heuristic(startNode, endNodes[0], score)
-    endNode = endNodes[0]
+    # find closest food object
+    if score < 50:
+        minHeuristic = heuristic(startNode, endNodes[0], score)
+        endNode = endNodes[0]
 
-    for node in endNodes:
-        thisNodeHeuristic = heuristic(startNode, node, score)
-        if (thisNodeHeuristic < minHeuristic):
-            minHeuristic = thisNodeHeuristic
-            endNode = node
+        for node in endNodes:
+            thisNodeHeuristic = heuristic(startNode, node, score)
+            if (thisNodeHeuristic < minHeuristic):
+                minHeuristic = thisNodeHeuristic
+                endNode = node
+    else:
+        maxHeuristic = heuristic(startNode, endNodes[0], score)
+        endNode = endNodes[0]
+
+        for node in endNodes:
+            thisNodeHeuristic = heuristic(startNode, node, score)
+            if (thisNodeHeuristic > maxHeuristic):
+                maxHeuristic = thisNodeHeuristic
+                endNode = node
 
     # our start node needs a cost
     startNode.h = heuristic(startNode, endNode, score)
