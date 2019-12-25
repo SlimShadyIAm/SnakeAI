@@ -3,9 +3,6 @@ from move import Move, Direction
 import time
 
 
-# This is the class which will hold a potential state the astar algo considers
-# It contains things like the f,g,h values of that state, information about
-# the state of the board, and the state of the snake's body
 class Node:
     def __init__(self, parent, position, snake_body, board):
         self.parent = parent
@@ -20,14 +17,17 @@ class Node:
 
         self.neighbors = []
 
-    # make state printable (print(state))
     def __repr__(self):
         return "Item(%s, %s)" % (self.position, self.f)
 
-# method to deepcopy the board list
+    # def __eq__(self, other):
+    #     if not isinstance(other, type(self)):
+    #         return NotImplemented
+    #     return self.f == other.f and self.g == other.g and self.h == other.h and self.parent == other.parent and self.position == other.position
 
 
 def copy_board(board):
+
     copy = [[GameObject.EMPTY for x in range(
         len(board))] for y in range(len(board))]
     for x in range(len(board)):
@@ -35,30 +35,31 @@ def copy_board(board):
             copy[x][y] = board[x][y] if board[x][y] is not GameObject.SNAKE_HEAD else GameObject.SNAKE_BODY
     return copy
 
-# method that checks if a Node object is in a list
-
 
 def nodeInSet(node, set):
     for setNode in set:
+        # if setNode.f == node.f and setNode.g == node.g and setNode.h == node.h and
         if setNode.position == node.position:
             return True
     return False
 
-# heuristic function. it is the square root of the manhattan distance
-
 
 def heuristic(start_node, end_node, score):
+    # return (((start_node.position[0] - end_node.position[0]) ** 2) +
+            # ((start_node.position[1] - end_node.position[1]) ** 2)) ** 0.5
+
     return (abs(
         start_node.position[0] - end_node.position[0]) + abs(start_node.position[1] - end_node.position[1])) ** 0.5
 
 
 def astar(head_position, board, score, snake_body):
+    # print("Head position:", head_position)
     # initialize our variables
-    openSet = []  # open list, list of states we're considering
-    closedSet = []  # closed list, list of states we're discarding
+    openSet = []
+    closedSet = []
     startNode = Node(None, head_position, snake_body.copy(),
-                     copy_board(board))  # initial state to find path to food from
-    endNode = Node(None, None, None, None)  # goal state (food)
+                     copy_board(board))
+    endNode = Node(None, None, None, None)
 
     # find the goal position
     for x in range(len(board)):
@@ -66,7 +67,7 @@ def astar(head_position, board, score, snake_body):
             if board[x][y] == GameObject.FOOD:
                 # found it!
                 endPos = (x, y)
-                endNode.position = endPos  # set goal state's position
+                endNode.position = endPos
 
     # our start node needs a cost
     startNode.h = heuristic(startNode, endNode, score)
@@ -90,41 +91,29 @@ def astar(head_position, board, score, snake_body):
 
         openSet.remove(current)
         closedSet.append(current)
-
-        # generate neighbors of the current state we're considering
         for neighborOffset in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
-            # Get neighbor position
+            # Get node position
             neighborPos = (
                 current.position[0] + neighborOffset[0], current.position[1] + neighborOffset[1])
 
-            # is this neighbor inside the bounds of the board?
             if (neighborPos[0] < (len(board)) and neighborPos[0] >= 0 and neighborPos[1] < (len(board[len(board)-1])) and neighborPos[1] >= 0):
-                # can the snake safely move to this state without dying? (is it empty/food object?)
                 if current.board[neighborPos[0]][neighborPos[1]] == GameObject.EMPTY or current.board[neighborPos[0]][neighborPos[1]] == GameObject.FOOD:
-                    # make a new node object for this state!
                     boardState = copy_board(current.board)
                     tempSnakeState = current.snake_body.copy()
 
-                    # our new state needs an updated snake body and board state
-                    # if our snake body list is not empty (snake has more than just head)
-                    if (len(tempSnakeState) > 0):
+                    if (len(tempSnakeState) > 1):
                         snakeTail = tempSnakeState[len(tempSnakeState) - 1]
-                        # update the board state in this node as if the snake has just moved,
-                        # so set the old tail position in board to empty
                         boardState[snakeTail[0]
                                    ][snakeTail[1]] = GameObject.EMPTY
 
-                        # the position we're moving to is now the snake head in the board
-                        boardState[neighborPos[0]
-                                   ][neighborPos[1]] = GameObject.SNAKE_HEAD
-                        # our old position we're moving from is now the snake body
-                        boardState[current.position[0]
-                                   ][current.position[1]] = GameObject.SNAKE_BODY
-                        tempSnakeState = tempSnakeState[::1]
-
-                    # our head has moved, so where the head was is now part of the body
                     tempSnakeState.insert(0, current.position)
 
+                    boardState[neighborPos[0]
+                               ][neighborPos[1]] = GameObject.SNAKE_HEAD
+                    boardState[current.position[0]
+                               ][current.position[1]] = GameObject.SNAKE_BODY
+                    # if len(tempSnakeState) > 1:
+                    tempSnakeState = tempSnakeState[::1]
                     neighborNode = Node(
                         current, neighborPos, tempSnakeState, boardState)
                     current.neighbors.append(neighborNode)
@@ -145,12 +134,9 @@ def astar(head_position, board, score, snake_body):
                 neighbor.f = neighbor.g + neighbor.h
                 neighbor.parent = current
 
-# we have the coordinates we want to move to. now we need to know which direction to move into...
-# this mess tries to figure out how.
-
 
 def resolveMovePath(path, direction, head_position):
-    # move in the x direction
+        # move in the x direction
     if path[1][0] != head_position[0]:
         if path[1][0] > head_position[0]:
             if direction == Direction.EAST:
@@ -167,7 +153,6 @@ def resolveMovePath(path, direction, head_position):
             elif direction == Direction.EAST or direction == Direction.SOUTH:
                 return Move.RIGHT
 
-    # move in y direction
     if path[1][1] != head_position[1]:
         if path[1][1] > head_position[1]:
             if direction == Direction.WEST:
@@ -184,23 +169,18 @@ def resolveMovePath(path, direction, head_position):
             elif direction == Direction.WEST or direction == Direction.SOUTH:
                 return Move.RIGHT
 
-# our path is empty, meaning our astar algorithm failed to find a path
-# try to stall the snake, so that eventually a path might open up
-
 
 def resolveMoveNoPath(board, head_position):
     path = []
     path.append(head_position)
     for neighborOffset in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
-            # generate neighbors of current position
+            # Get node position
         neighborPos = (
             head_position[0] + neighborOffset[0], head_position[1] + neighborOffset[1])
         if (neighborPos[0] < (len(board)) and neighborPos[0] >= 0 and neighborPos[1] < (len(board[len(board)-1])) and neighborPos[1] >= 0):
             if board[neighborPos[0]][neighborPos[1]] == GameObject.EMPTY or board[neighborPos[0]][neighborPos[1]] == GameObject.FOOD:
-                # as long as the neighbor is moveable into, move in that direction
                 path.append(neighborPos)
                 return path
-    # only reach here if the snake has nowhere to move to without dying. gg :(
     print("Goodbye cruel world, i'm stuck :(")
     return path
 
@@ -252,7 +232,7 @@ class Agent:
         Move.LEFT and Move.RIGHT changes the direction of the snake. In example, if the snake is facing north and the
         move left is made, the snake will go one block to the left and change its direction to west.
         """
-        # we don't know where to move to. our path is empty. run astar so we know where to go to
+
         if len(self.path) <= 1:
             self.path = astar(head_position, board,
                               score, body_parts)
@@ -260,26 +240,19 @@ class Agent:
         # print(
         #     "Current position: {0}\nPath: {1}]\nScore: {2}\n-----".format(head_position, self.path, score))
 
-        # was astar able to find a path? (if not, the array would be None)
         if self.path:
-            # great, we did. move in that direction
             tempMove = resolveMovePath(self.path, direction, head_position)
-            # delete the position we're about to move to before the next move after that
             del self.path[0]
-            return
-        # astar couldn't find a path, meaning the food isn't accessible, at least right now
+            return tempMove
         else:
-            # try to stall the snake by moving around, maybe a path opens up
             self.path = resolveMoveNoPath(board, head_position)
-            # do we have space to move around? (is the snake completely trapped?)
+            # time.sleep(1)
             if self.path:
-                # no, we can stall
                 if len(self.path) > 1:
                     tempMove = resolveMovePath(
                         self.path, direction, head_position)
                     del self.path[0]
                     return tempMove
-                # snake is completely trapped. fuck
                 else:
                     return Move.STRAIGHT
 
@@ -320,4 +293,3 @@ class Agent:
         When the snake runs in its own body the following holds: head_position in body_parts.
         """
         print("score:", score)
-        self.path = []
