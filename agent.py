@@ -60,6 +60,7 @@ def astar(head_position, board, score, snake_body):
     closedSet = []  # closed list, list of states we're discarding
     startNode = Node(None, head_position, snake_body.copy(),
                      copy_board(board))  # initial state to find path to food from
+    endNodes = []  # all possible food objects
     # endNode = Node(None, None, None, None)  # goal state (food)
 
     # find the goal position
@@ -68,7 +69,18 @@ def astar(head_position, board, score, snake_body):
             if board[x][y] == GameObject.FOOD:
                 # found it!
                 endPos = (x, y)
-                endNode.position = endPos
+                newEndNode = Node(None, None, None, None)
+                newEndNode.position = endPos
+                endNodes.append(newEndNode)
+
+    minHeuristic = heuristic(startNode, endNodes[0], score)
+    endNode = endNodes[0]
+
+    for node in endNodes:
+        thisNodeHeuristic = heuristic(startNode, node, score)
+        if (thisNodeHeuristic < minHeuristic):
+            minHeuristic = thisNodeHeuristic
+            endNode = node
 
     # our start node needs a cost
     startNode.h = heuristic(startNode, endNode, score)
